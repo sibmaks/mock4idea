@@ -15,7 +15,7 @@ import com.intellij.psi.util.PsiTreeUtil
  * @author drobyshev-ma
  * @since 0.0.1
  */
-class MockitoReturnIntention : IntentionAction {
+class MockStatementIntention : IntentionAction {
     override fun getText(): @IntentionName String {
         return "Mockito: stub selected declarations (mock + when/thenReturn)"
     }
@@ -99,7 +99,22 @@ class MockitoReturnIntention : IntentionAction {
             return false
         }
         if (init.text.isBlank()) return false
+        if (isMockitoMockExpression(init)) return false
         return true
+    }
+
+    private fun isMockitoMockExpression(init: PsiExpression): Boolean {
+        val call = init as? PsiMethodCallExpression ?: return false
+        val methodExpression = call.methodExpression
+        if (methodExpression.referenceName != "mock") return false
+
+        val resolved = call.resolveMethod()
+        if (resolved != null) {
+            return resolved.containingClass?.qualifiedName == "org.mockito.Mockito"
+        }
+
+        val qualifier = methodExpression.qualifierExpression?.text
+        return qualifier == null || qualifier == "Mockito" || qualifier == "org.mockito.Mockito"
     }
 
     private fun transformStatement(
