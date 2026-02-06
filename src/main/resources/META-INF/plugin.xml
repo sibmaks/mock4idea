@@ -11,7 +11,7 @@
             <language>JAVA</language>
             <className>io.github.sibmaks.mock4idea.MockStatementIntention</className>
         </intentionAction>
-        <applicationConfigurable
+        <projectConfigurable
                 id="io.github.sibmaks.mock4idea.MockingConfigurable"
                 parentId="tools"
                 displayName="Mockito Tweaks"

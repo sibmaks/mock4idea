@@ -19,9 +19,7 @@ class MockingSettingsService : PersistentStateComponent<MockingSettingsService.S
     )
 
     data class State(
-        var rules: MutableList<Rule> = mutableListOf(
-            Rule("java.lang.String", "UUID.randomUUID().toString()")
-        )
+        var rules: MutableList<Rule> = defaultRules().toMutableList()
     )
 
     private var state = State()
@@ -50,12 +48,34 @@ class MockingSettingsService : PersistentStateComponent<MockingSettingsService.S
     }
 
     private fun ensureDefaults() {
-        if (state.rules.isEmpty()) {
-            state.rules.add(Rule("java.lang.String", "UUID.randomUUID().toString()"))
+        val existingTypes = state.rules.map { it.typeFqn }.toMutableSet()
+        defaultRules().forEach { defaultRule ->
+            if (defaultRule.typeFqn !in existingTypes) {
+                state.rules.add(defaultRule)
+                existingTypes.add(defaultRule.typeFqn)
+            }
         }
     }
 
     companion object {
+        val primitiveTypes: Set<String> = setOf(
+            "boolean", "byte", "short", "int", "long", "float", "double", "char"
+        )
+
+        fun defaultRules(): List<Rule> {
+            return listOf(
+                Rule("java.lang.String", "UUID.randomUUID().toString()"),
+                Rule("boolean", "false"),
+                Rule("byte", "(byte) 0"),
+                Rule("short", "(short) 0"),
+                Rule("int", "0"),
+                Rule("long", "0L"),
+                Rule("float", "0.0f"),
+                Rule("double", "0.0d"),
+                Rule("char", "'\\u0000'")
+            )
+        }
+
         fun getInstance(): MockingSettingsService {
             return ApplicationManager.getApplication().service()
         }
