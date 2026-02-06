@@ -48,8 +48,6 @@ class MockStatementIntention : IntentionAction {
 
         WriteCommandAction.runWriteCommandAction(project, "Mockito Stub Transform", null, {
             val factory = JavaPsiFacade.getElementFactory(project)
-
-            ensureImport("java.util.UUID", file, project)
             ensureMockitoMethodImport(file, project)
 
             targets.sortedByDescending { it.textRange.startOffset }
@@ -145,14 +143,9 @@ class MockStatementIntention : IntentionAction {
         style.shortenClassReferences(insertedWhen)
     }
 
-    private fun resolveMockStatement(
-        typeCanonical: String
-    ): String {
-        return if (typeCanonical == "java.lang.String") {
-            "UUID.randomUUID().toString()"
-        } else {
-            "mock()"
-        }
+    private fun resolveMockStatement(typeCanonical: String): String {
+        val configured = MockingSettingsService.getInstance().resolveMockExpression(typeCanonical)
+        return configured ?: "mock()"
     }
 
     private fun resolveTypeCanonicalText(
