@@ -1,0 +1,15 @@
+<idea-plugin>
+    <id>io.github.sibmaks.mock4idea</id>
+    <name>Mockito Tweaks 4 IDEA</name>
+    <vendor>sibmaks</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <intentionAction>
+            <language>JAVA</language>
+            <className>io.github.sibmaks.mock4idea.MockStatementIntention</className>
+        </intentionAction>
+    </extensions>
+</idea-plugin>
