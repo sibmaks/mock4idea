@@ -37,35 +37,35 @@ class CreateMockitoTestIntention : IntentionAction {
 
         val sourceFile = targetClass.containingFile as? PsiJavaFile ?: return
         val selectedTestRoot = chooseTestRootDirectory(project, targetClass) ?: return
-
+        val nl = System.lineSeparator()
         val testClassName = "${targetClass.name}Test"
         val packageName = sourceFile.packageName
         val subjectName = resolveSubjectVariableName(targetClass.name ?: "subject")
         val classType = targetClass.qualifiedName ?: (targetClass.name ?: "Object")
 
-        val mockFields = dependencies.joinToString("\n") { param ->
+        val mockFields = dependencies.joinToString("$nl") { param ->
             val typeText = resolveTypeText(param.type)
-            val name = param.name ?: "dependency"
-            "    @Mock\n    private $typeText $name;"
+            val name = param.name
+            "    @Mock$nl    private $typeText $name;"
         }
 
         val testContent = buildString {
             if (packageName.isNotBlank()) {
-                append("package $packageName;\n\n")
+                append("package $packageName;$nl$nl")
             }
-            append("import org.junit.jupiter.api.extension.ExtendWith;\n")
-            append("import org.mockito.InjectMocks;\n")
-            append("import org.mockito.Mock;\n")
-            append("import org.mockito.junit.jupiter.MockitoExtension;\n\n")
-            append("@ExtendWith(MockitoExtension.class)\n")
-            append("class $testClassName {\n")
+            append("import org.junit.jupiter.api.extension.ExtendWith;$nl")
+            append("import org.mockito.InjectMocks;$nl")
+            append("import org.mockito.Mock;$nl")
+            append("import org.mockito.junit.jupiter.MockitoExtension;$nl$nl")
+            append("@ExtendWith(MockitoExtension.class)$nl")
+            append("class $testClassName {$nl")
             if (mockFields.isNotBlank()) {
                 append(mockFields)
-                append("\n\n")
+                append("$nl$nl")
             }
-            append("    @InjectMocks\n")
-            append("    private $classType $subjectName;\n")
-            append("}\n")
+            append("    @InjectMocks$nl")
+            append("    private $classType $subjectName;$nl")
+            append("}$nl")
         }
 
         WriteCommandAction.runWriteCommandAction(project, "Create Mockito Test Class", null, {

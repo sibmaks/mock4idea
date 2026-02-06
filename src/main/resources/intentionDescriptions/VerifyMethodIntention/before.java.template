@@ -1,0 +1,5 @@
+class Example {
+    void test(Repository repository) {
+        repository.getAll();
+    }
+}

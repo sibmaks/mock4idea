@@ -1,0 +1,9 @@
+class UserService {
+    private final UserRepository userRepository;
+    private final AuditService auditService;
+
+    UserService(UserRepository userRepository, AuditService auditService) {
+        this.userRepository = userRepository;
+        this.auditService = auditService;
+    }
+}

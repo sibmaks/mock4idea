@@ -1,0 +1,7 @@
+import static org.mockito.Mockito.verify;
+
+class Example {
+    void test(Repository repository) {
+        verify(repository).getAll();
+    }
+}

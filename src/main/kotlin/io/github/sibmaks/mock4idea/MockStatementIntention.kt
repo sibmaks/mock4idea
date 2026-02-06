@@ -126,9 +126,9 @@ class MockStatementIntention : IntentionAction {
 
         val varName = v.name
         val typeCanonical = resolveTypeCanonicalText(init, v.type)
-
+        val nl = System.lineSeparator()
         val mockStatementText = "$typeCanonical $varName = ${resolveMockStatement(typeCanonical)};"
-        val whenStatementText = "when(${init.text})\n.thenReturn($varName);\n"
+        val whenStatementText = "when(${init.text})$nl.thenReturn($varName);$nl"
 
         val mockStatement = factory.createStatementFromText(mockStatementText, statement)
         val whenStatement = factory.createStatementFromText(whenStatementText, statement)

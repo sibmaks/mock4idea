@@ -15,6 +15,10 @@
             <language>JAVA</language>
             <className>io.github.sibmaks.mock4idea.CreateMockitoTestIntention</className>
         </intentionAction>
+        <intentionAction>
+            <language>JAVA</language>
+            <className>io.github.sibmaks.mock4idea.VerifyMethodIntention</className>
+        </intentionAction>
         <projectConfigurable
                 id="io.github.sibmaks.mock4idea.MockingConfigurable"
                 parentId="tools"

@@ -64,7 +64,7 @@ class MockingSettingsService : PersistentStateComponent<MockingSettingsService.S
 
         fun defaultRules(): List<Rule> {
             return listOf(
-                Rule("java.lang.String", "UUID.randomUUID().toString()"),
+                Rule("java.lang.String", "java.util.UUID.randomUUID().toString()"),
                 Rule("boolean", "false"),
                 Rule("byte", "(byte) 0"),
                 Rule("short", "(short) 0"),
