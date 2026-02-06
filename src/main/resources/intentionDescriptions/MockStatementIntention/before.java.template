@@ -1,0 +1,5 @@
+class Example {
+    void test(Service service) {
+        String name = service.getName();
+    }
+}

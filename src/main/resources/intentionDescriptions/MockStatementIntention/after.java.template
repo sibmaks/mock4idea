@@ -1,0 +1,7 @@
+class Example {
+    void test(Service service) {
+        String name = UUID.randomUUID().toString();
+        when(service.getName())
+            .thenReturn(name);
+    }
+}
