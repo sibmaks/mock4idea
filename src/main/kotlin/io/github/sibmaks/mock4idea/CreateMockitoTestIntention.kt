@@ -3,8 +3,10 @@ package io.github.sibmaks.mock4idea
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInspection.util.IntentionFamilyName
 import com.intellij.codeInspection.util.IntentionName
+import com.intellij.ide.util.DirectoryChooserUtil
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
@@ -37,36 +39,12 @@ class CreateMockitoTestIntention : IntentionAction {
 
         val sourceFile = targetClass.containingFile as? PsiJavaFile ?: return
         val selectedTestRoot = chooseTestRootDirectory(project, targetClass) ?: return
-        val nl = System.lineSeparator()
         val testClassName = "${targetClass.name}Test"
         val packageName = sourceFile.packageName
         val subjectName = resolveSubjectVariableName(targetClass.name ?: "subject")
         val classType = targetClass.qualifiedName ?: (targetClass.name ?: "Object")
 
-        val mockFields = dependencies.joinToString("$nl") { param ->
-            val typeText = resolveTypeText(param.type)
-            val name = param.name
-            "    @Mock$nl    private $typeText $name;"
-        }
-
-        val testContent = buildString {
-            if (packageName.isNotBlank()) {
-                append("package $packageName;$nl$nl")
-            }
-            append("import org.junit.jupiter.api.extension.ExtendWith;$nl")
-            append("import org.mockito.InjectMocks;$nl")
-            append("import org.mockito.Mock;$nl")
-            append("import org.mockito.junit.jupiter.MockitoExtension;$nl$nl")
-            append("@ExtendWith(MockitoExtension.class)$nl")
-            append("class $testClassName {$nl")
-            if (mockFields.isNotBlank()) {
-                append(mockFields)
-                append("$nl$nl")
-            }
-            append("    @InjectMocks$nl")
-            append("    private $classType $subjectName;$nl")
-            append("}$nl")
-        }
+        var createdFile: PsiJavaFile? = null
 
         WriteCommandAction.runWriteCommandAction(project, "Create Mockito Test Class", null, {
             val targetDirectory = ensurePackageDirectory(selectedTestRoot, packageName)
@@ -74,17 +52,44 @@ class CreateMockitoTestIntention : IntentionAction {
                 return@runWriteCommandAction
             }
 
-            val psiFileFactory = PsiFileFactory.getInstance(project)
-            val created = psiFileFactory.createFileFromText(
-                "$testClassName.java",
-                sourceFile.language,
-                testContent
-            ) as? PsiJavaFile ?: return@runWriteCommandAction
+            val javaDirectoryService = JavaDirectoryService.getInstance()
+            val testClass = javaDirectoryService.createClass(targetDirectory, testClassName)
+            val created = testClass.containingFile as? PsiJavaFile ?: return@runWriteCommandAction
+            val factory = JavaPsiFacade.getElementFactory(project)
 
-            val added = targetDirectory.add(created) as? PsiJavaFile ?: return@runWriteCommandAction
-            CodeStyleManager.getInstance(project).reformat(added)
-            JavaCodeStyleManager.getInstance(project).shortenClassReferences(added)
+            val modifierList = testClass.modifierList ?: return@runWriteCommandAction
+            val classAnnotation = factory.createAnnotationFromText(
+                "@org.junit.jupiter.api.extension.ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)",
+                testClass
+            )
+            modifierList.addBefore(classAnnotation, modifierList.firstChild)
+
+            val body = testClass.lBrace?.parent ?: return@runWriteCommandAction
+            val anchor = testClass.rBrace ?: return@runWriteCommandAction
+
+            dependencies.forEach { param ->
+                val typeText = resolveTypeText(param.type)
+                val name = param.name ?: "dependency"
+                val field = factory.createFieldFromText(
+                    "@org.mockito.Mock private $typeText $name;",
+                    testClass
+                )
+                body.addBefore(field, anchor)
+            }
+
+            val injectField = factory.createFieldFromText(
+                "@org.mockito.InjectMocks private $classType $subjectName;",
+                testClass
+            )
+            body.addBefore(injectField, anchor)
+
+            CodeStyleManager.getInstance(project).reformat(created)
+            JavaCodeStyleManager.getInstance(project).shortenClassReferences(created)
+            createdFile = created
         }, file)
+
+        val newFile = createdFile ?: return
+        FileEditorManager.getInstance(project).openFile(newFile.virtualFile, true, false)
     }
 
     override fun startInWriteAction(): Boolean = false
@@ -172,11 +177,11 @@ class CreateMockitoTestIntention : IntentionAction {
         val rootFiles = mutableListOf<VirtualFile>()
         if (module != null) {
             rootFiles += ModuleRootManager.getInstance(module).sourceRoots
-                .filter { fileIndex.isInTestSourceContent(it) }
+                .filter { fileIndex.isInTestSourceContent(it) && !fileIndex.isInGeneratedSources(it) }
         }
         if (rootFiles.isEmpty()) {
             rootFiles += ProjectRootManager.getInstance(project).contentSourceRoots
-                .filter { fileIndex.isInTestSourceContent(it) }
+                .filter { fileIndex.isInTestSourceContent(it) && !fileIndex.isInGeneratedSources(it) }
         }
 
         val directories = rootFiles
@@ -196,17 +201,15 @@ class CreateMockitoTestIntention : IntentionAction {
             return directories.first()
         }
 
-        val options = directories.map { it.virtualFile.path }.toTypedArray()
-        val selected = Messages.showChooseDialog(
+        val descriptions = directories.associateWith { dir ->
+            fileIndex.getModuleForFile(dir.virtualFile)?.name ?: dir.virtualFile.path
+        }
+        return DirectoryChooserUtil.chooseDirectory(
+            directories.toTypedArray(),
+            directories.first(),
             project,
-            "Select test source root for the generated test class:",
-            "Create Mockito Test Class",
-            null,
-            options,
-            options.first()
+            descriptions
         )
-        if (selected < 0) return null
-        return directories[selected]
     }
 
     private fun ensurePackageDirectory(root: PsiDirectory, packageName: String): PsiDirectory {
