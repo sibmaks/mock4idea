@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
@@ -17,6 +18,7 @@ import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.codeStyle.JavaCodeStyleManager
 import com.intellij.psi.util.PsiTreeUtil
+import org.jetbrains.jps.model.java.JavaSourceRootType
 
 class CreateMockitoTestIntention : IntentionAction {
     override fun getText(): @IntentionName String {
@@ -49,6 +51,11 @@ class CreateMockitoTestIntention : IntentionAction {
         WriteCommandAction.runWriteCommandAction(project, "Create Mockito Test Class", null, {
             val targetDirectory = ensurePackageDirectory(selectedTestRoot, packageName)
             if (targetDirectory.findFile("$testClassName.java") != null) {
+                Messages.showWarningDialog(
+                    project,
+                    "Test file already exists: ${targetDirectory.virtualFile.path}/$testClassName.java",
+                    "Create Mockito Test Class"
+                )
                 return@runWriteCommandAction
             }
 
@@ -69,7 +76,7 @@ class CreateMockitoTestIntention : IntentionAction {
 
             dependencies.forEach { param ->
                 val typeText = resolveTypeText(param.type)
-                val name = param.name ?: "dependency"
+                val name = param.name
                 val field = factory.createFieldFromText(
                     "@org.mockito.Mock private $typeText $name;",
                     testClass
@@ -177,11 +184,11 @@ class CreateMockitoTestIntention : IntentionAction {
         val rootFiles = mutableListOf<VirtualFile>()
         if (module != null) {
             rootFiles += ModuleRootManager.getInstance(module).sourceRoots
-                .filter { fileIndex.isInTestSourceContent(it) && !fileIndex.isInGeneratedSources(it) }
+                .filter { root -> isEligibleTestJavaRoot(root, fileIndex) }
         }
         if (rootFiles.isEmpty()) {
             rootFiles += ProjectRootManager.getInstance(project).contentSourceRoots
-                .filter { fileIndex.isInTestSourceContent(it) && !fileIndex.isInGeneratedSources(it) }
+                .filter { root -> isEligibleTestJavaRoot(root, fileIndex) }
         }
 
         val directories = rootFiles
@@ -202,7 +209,8 @@ class CreateMockitoTestIntention : IntentionAction {
         }
 
         val descriptions = directories.associateWith { dir ->
-            fileIndex.getModuleForFile(dir.virtualFile)?.name ?: dir.virtualFile.path
+            val moduleName = fileIndex.getModuleForFile(dir.virtualFile)?.name
+            if (moduleName.isNullOrBlank()) "" else " [$moduleName]"
         }
         return DirectoryChooserUtil.chooseDirectory(
             directories.toTypedArray(),
@@ -210,6 +218,13 @@ class CreateMockitoTestIntention : IntentionAction {
             project,
             descriptions
         )
+    }
+
+    private fun isEligibleTestJavaRoot(root: VirtualFile, fileIndex: ProjectFileIndex): Boolean {
+        if (!fileIndex.isInTestSourceContent(root) || fileIndex.isInGeneratedSources(root)) {
+            return false
+        }
+        return fileIndex.getContainingSourceRootType(root) == JavaSourceRootType.TEST_SOURCE
     }
 
     private fun ensurePackageDirectory(root: PsiDirectory, packageName: String): PsiDirectory {
