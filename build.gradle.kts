@@ -1,5 +1,5 @@
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.*
 
 plugins {
     kotlin("jvm") version "2.2.21"
@@ -47,8 +47,19 @@ intellijPlatform {
             sinceBuild = "252"
         }
 
+        description = """
+            <p>Mockito Tweaks 4 IDEA speeds up routine Mockito operations in Java tests.</p>
+            <p>It provides intentions for:</p>
+            <ul>
+              <li>stubbing selected statements with <code>when(...).thenReturn(...)</code></li>
+              <li>wrapping calls with <code>verify(...)</code></li>
+              <li>generating Mockito-based <code>&lt;ClassName&gt;Test</code> classes</li>
+            </ul>
+            <p>The plugin is focused on reducing boilerplate while keeping generated code explicit and readable.</p>
+        """.trimIndent()
+
         changeNotes = """
-            Initial version
+            Just released
         """.trimIndent()
     }
 }
