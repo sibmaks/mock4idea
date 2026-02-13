@@ -35,16 +35,18 @@ jobs:
           echo "Building version: ${VERSION}"
           VERSION="${VERSION}" ./gradlew clean buildPlugin --no-daemon
 
-      - name: Locate release jar
+      - name: Resolve release jar path
         id: jar
+        env:
+          VERSION: ${{ github.ref_name }}
         run: |
-          JAR_PATH="$(find build/libs -maxdepth 1 -type f -name '*.jar' \
-            | grep -v -- '-base\.jar$' \
-            | grep -v -- '-instrumented\.jar$' \
-            | head -n 1)"
+          VERSION="${VERSION#v}"
+          JAR_PATH="build/libs/mock4idea-${VERSION}.jar"
 
-          if [ -z "${JAR_PATH}" ]; then
-            echo "No release jar found in build/libs"
+          if [ ! -f "${JAR_PATH}" ]; then
+            echo "Release jar not found: ${JAR_PATH}"
+            echo "Available artifacts:"
+            ls -la build/libs || true
             exit 1
           fi
 
