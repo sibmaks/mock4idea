@@ -13,6 +13,10 @@
         </intentionAction>
         <intentionAction>
             <language>JAVA</language>
+            <className>io.github.sibmaks.mock4idea.MockChainIntention</className>
+        </intentionAction>
+        <intentionAction>
+            <language>JAVA</language>
             <className>io.github.sibmaks.mock4idea.CreateMockitoTestIntention</className>
         </intentionAction>
         <intentionAction>

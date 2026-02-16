@@ -41,12 +41,12 @@ jobs:
           VERSION: ${{ github.ref_name }}
         run: |
           VERSION="${VERSION#v}"
-          JAR_PATH="build/libs/mock4idea-${VERSION}.jar"
+          JAR_PATH="build/distributions/mock4idea-${VERSION}.jar"
 
           if [ ! -f "${JAR_PATH}" ]; then
             echo "Release jar not found: ${JAR_PATH}"
             echo "Available artifacts:"
-            ls -la build/libs || true
+            ls -la build/distributions || true
             exit 1
           fi
 

@@ -1,0 +1,11 @@
+class Example {
+    void test(UserRepository userRepository, String id) {
+        Optional<User> userOptional = mock();
+        when(userRepository.findById(id))
+                .thenReturn(userOptional);
+
+        User user = mock();
+        when(userOptional.orElse(null))
+                .thenReturn(user);
+    }
+}

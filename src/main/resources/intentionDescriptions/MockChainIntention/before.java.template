@@ -1,0 +1,6 @@
+class Example {
+    void test(UserRepository userRepository, String id) {
+        var user = userRepository.findById(id)
+                .orElse(null);
+    }
+}
