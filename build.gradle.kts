@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        create("IC", "2025.2")
+        intellijIdeaCommunity("2025.1")
         bundledPlugin("com.intellij.java")
     }
 
@@ -30,7 +30,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 tasks.test {
